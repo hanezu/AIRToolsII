@@ -1,6 +1,6 @@
 function [Afun,b,m,n,K,kmax,x0,lbound,ubound,stoprule,taudelta, ...
     relaxparinput,rho,res_dims,rkm1,dk,do_waitbar,verbose,damp,THR,...
-    Kbegin,Nunflag] = check_inputs(A,b,K,x0,options)
+    Kbegin,Nunflag,lambda] = check_inputs(A,b,K,x0,options)
 %CHECK_INPUTS  Check inputs and set default values
 %
 %   [Afun,b,m,n,K,kmax,x0,lbound,ubound,stoprule,taudelta, ...
@@ -257,4 +257,9 @@ end
 verbose = 0;
 if isfield(options,'verbose') && options.verbose
     verbose = options.verbose;
+end
+
+lambda = 0;
+if isfield(options,'lambda') && options.lambda
+    lambda = options.lambda;
 end

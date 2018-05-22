@@ -117,7 +117,7 @@ end
 % Parse inputs.
 [Afun,b,m,n,K,kmax,x0,lbound,ubound,stoprule,taudelta, relaxparinput, ...
      ~,res_dims,rkm1,dk,do_waitbar,verbose,...
-     damp] = check_inputs(varargin{:});
+     damp,~,~,~,lambda] = check_inputs(varargin{:});
 
 % Special check for symkaczmarz: number of iterations must be even.
 if ischar(art_method) && strncmpi(art_method,'sym',3)
@@ -149,6 +149,7 @@ rk = b - Afun(x0,'notransp');
 % Initialization before iterations.
 k = 0;   % Iteration counter.
 xk = x0; % Use initial vector.
+vk = x0; % Use the same initial vector for v (used in SK)
 l = 1;   % Pointing to the next iterate number in K to be saved.
 
 % Initial check of stopping criteria.
@@ -182,16 +183,23 @@ end
 
 % Depending on the ART method, set the row order.
 is_randkaczmarz = false;
+is_sparsekaczmarz = false;
 if ischar(art_method)
     switch lower(art_method)
-        case 'kaczmarz'
+        case {'kaczmarz', 'sk'}
             I = find(normAi>0);
+            if ~strcmp(art_method,'kaczmarz')
+                is_sparsekaczmarz = true;
+            end
         case 'symkaczmarz'
             I = find(normAi>0);
             I = [I, I(end:-1:1)];
-        case 'randkaczmarz'
+        case {'randkaczmarz', 'rsk', 'rrsk'}
             is_randkaczmarz = true;
             I = find(normAi>0);
+            if ~strcmp(art_method,'randkaczmarz')
+                is_sparsekaczmarz = true;
+            end
         otherwise
             error('Unknown ART method specified')
     end
@@ -216,6 +224,7 @@ if is_randkaczmarz
     else
         fast = false;
     end
+    info.fast = fast;
 end
 
 % Initalize waitbar if selected.
@@ -274,7 +283,10 @@ while ~stop
             relaxpar = relaxparinput((k-1)*m+i);
         end
         xk = xk + (relaxpar*(b(ri) - ai'*xk)/normAi(ri))*ai;
-        
+        if is_sparsekaczmarz
+            vk = xk;
+            xk = vk .* (vk > lambda);  % soft threshold operator
+        end
         % Enforce any lower and upper bounds (scalars or xk-sized vectors).
         if ~isempty(lbound)
             xk = max(xk,lbound);
