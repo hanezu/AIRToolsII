@@ -117,7 +117,7 @@ end
 % Parse inputs.
 [Afun,b,m,n,K,kmax,x0,lbound,ubound,stoprule,taudelta, relaxparinput, ...
      ~,res_dims,rkm1,dk,do_waitbar,verbose,...
-     damp,~,~,~,lambda] = check_inputs(varargin{:});
+     damp,~,~,~,lambda,ita,theta,robust] = check_inputs(varargin{:});
 
 % Special check for symkaczmarz: number of iterations must be even.
 if ischar(art_method) && strncmpi(art_method,'sym',3)
@@ -184,6 +184,7 @@ end
 % Depending on the ART method, set the row order.
 is_randkaczmarz = false;
 is_sparsekaczmarz = false;
+using_ita = false;
 if ischar(art_method)
     switch lower(art_method)
         case {'kaczmarz', 'sk'}
@@ -199,6 +200,10 @@ if ischar(art_method)
             I = find(normAi>0);
             if ~strcmp(art_method,'randkaczmarz')
                 is_sparsekaczmarz = true;
+                if ~isnan(ita)
+                    fprintf(1, 'using customized ita')
+                    using_ita = true
+                end
             end
         otherwise
             error('Unknown ART method specified')
@@ -232,6 +237,7 @@ if do_waitbar
     h_waitbar = waitbar(0);
 end
 
+t = 1
 % Main ART loop.
 while ~stop
         
@@ -282,11 +288,25 @@ while ~stop
         if isa(relaxparinput,'function_handle')
             relaxpar = relaxparinput((k-1)*m+i);
         end
-        xk = xk + (relaxpar*(b(ri) - ai'*xk)/normAi(ri))*ai;
-        if is_sparsekaczmarz
-            vk = xk;
-            xk = vk .* (vk > lambda);  % soft threshold operator
+        
+        if using_ita
+            if robust
+                uk = e ^ (b(ri) - ai'*xk);
+                vk = vk + ita(t) * (1 - uk) / (1 + uk) * ai;
+            else
+                vk = vk + ita(t) * (b(ri) - ai'*xk) * ai;
+            end
+            
+        else
+            vk = vk + (relaxpar*(b(ri) - ai'*xk)/normAi(ri))*ai;
         end
+        
+        if is_sparsekaczmarz
+            xk = vk .* (vk > lambda);  % soft threshold operator
+        else
+            xk = vk;
+        end
+        
         % Enforce any lower and upper bounds (scalars or xk-sized vectors).
         if ~isempty(lbound)
             xk = max(xk,lbound);
@@ -294,6 +314,7 @@ while ~stop
         if ~isnan(ubound)
             xk = min(xk,ubound);
         end
+        t = t + 1;
     end
     
     % New residual.
