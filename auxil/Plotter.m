@@ -18,8 +18,9 @@ classdef Plotter
             caxis(this.c);
             title(graph_title);
             info;
-            relative_error = safe_relative_error(this.x, X);
+            [relative_error,sparsity,sparsity_acc] = evaluate(this.x, X);
             fprintf(1,'Relative error = %2.3f %%\n', relative_error);
+            fprintf(1,'sparsity = %d\nsparsity_acc = %2.3f %%\n', sparsity,sparsity_acc);
         end
     end
 end
