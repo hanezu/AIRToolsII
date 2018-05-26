@@ -4,15 +4,15 @@ classdef Plotter
        N
        c
        k
-       print_info
+       A
     end
     methods 
-        function this = Plotter(x, N, c, k, print_info) 
+        function this = Plotter(x, N, c, k, A) 
             this.x = x;
             this.N = N;
             this.c = c;
             this.k = k;
-            this.print_info = print_info;
+            this.A = A;
         end
         function plot(this, X, graph_title)
             subplot(2, 2, 1);
@@ -23,14 +23,15 @@ classdef Plotter
 %             fprintf(1,'Relative error = %2.3f %%\n', relative_error);
 %             fprintf(1,'sparsity = %d\nsparsity_acc = %2.3f %%\n', sparsity,sparsity_acc);
             subplot(2, 2, 2);
-            plot(this.k, relative_error)
-            title('rel err')
+            t = this.k * size(this.A,1);
+            semilogx(t, relative_error)
+            title('relative error')
             subplot(2, 2, 3);
-            plot(this.k, sparsity)
+            semilogx(t, sparsity)
             title('sparsity')
             subplot(2, 2, 4);
-            plot(this.k, sparsity_acc)
-            title('sparsity acc')
+            semilogx(t, sparsity_acc)
+            title('sparsity accuracy')
         end
     end
 end

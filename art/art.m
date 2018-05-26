@@ -237,7 +237,7 @@ if do_waitbar
     h_waitbar = waitbar(0);
 end
 
-t = 1
+t = 1;
 % Main ART loop.
 while ~stop
         
@@ -292,6 +292,8 @@ while ~stop
         if using_ita
             if robust
                 uk = exp(b(ri) - ai'*xk);
+                % We need to divide by normAi(ri) here, because it is
+                % belong to input set, not the relax parameter!
                 vk = vk + ita(t, theta) * (uk - 1) / (uk + 1) / normAi(ri) * ai;
             else
                 vk = vk + ita(t, theta) * (b(ri) - ai'*xk) / normAi(ri) * ai;
