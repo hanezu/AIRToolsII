@@ -200,9 +200,9 @@ if ischar(art_method)
             I = find(normAi>0);
             if ~strcmp(art_method,'randkaczmarz')
                 is_sparsekaczmarz = true;
-                if ~isnan(ita)
+                if isa(ita,'function_handle')
                     fprintf(1, 'using customized ita')
-                    using_ita = true
+                    using_ita = true;
                 end
             end
         otherwise
@@ -291,10 +291,10 @@ while ~stop
         
         if using_ita
             if robust
-                uk = e ^ (b(ri) - ai'*xk);
-                vk = vk + ita(t) * (1 - uk) / (1 + uk) * ai;
+                uk = exp(b(ri) - ai'*xk);
+                vk = vk + ita(t, theta) * (uk - 1) / (uk + 1) / normAi(ri) * ai;
             else
-                vk = vk + ita(t) * (b(ri) - ai'*xk) * ai;
+                vk = vk + ita(t, theta) * (b(ri) - ai'*xk) / normAi(ri) * ai;
             end
             
         else

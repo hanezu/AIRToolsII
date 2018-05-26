@@ -260,17 +260,17 @@ if isfield(options,'verbose') && options.verbose
 end
 
 lambda = 0;
-if isfield(options,'lambda') && options.lambda
+if isfield(options,'lambda')
     lambda = options.lambda;
 end
 
-ita = nan;
-if isfield(options,'ita') && options.ita
+ita = 0;
+if isfield(options,'ita')
     ita = options.ita;
 end
 
 theta = 1;
-if isfield(options,'theta') && options.theta
+if isfield(options,'theta')
     theta = options.theta;
 end
 
