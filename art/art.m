@@ -117,7 +117,7 @@ end
 % Parse inputs.
 [Afun,b,m,n,K,kmax,x0,lbound,ubound,stoprule,taudelta, relaxparinput, ...
      ~,res_dims,rkm1,dk,do_waitbar,verbose,...
-     damp,~,~,~,lambda,ita,theta,robust] = check_inputs(varargin{:});
+     damp,~,~,~,lambda,ita,theta,robust,noise,speed] = check_inputs(varargin{:});
 
 % Special check for symkaczmarz: number of iterations must be even.
 if ischar(art_method) && strncmpi(art_method,'sym',3)
@@ -201,7 +201,6 @@ if ischar(art_method)
             if ~strcmp(art_method,'randkaczmarz')
                 is_sparsekaczmarz = true;
                 if isa(ita,'function_handle')
-                    fprintf(1, 'using customized ita')
                     using_ita = true;
                 end
             end
@@ -215,6 +214,15 @@ else
     I = I(normAi(I)>0);
 end
 
+noise_gaussian = false;
+noise_cauchy = false;
+if strcmp(noise, 'gaussian')
+    fprintf(1, 'add gaussian noise\n')
+    noise_gaussian = true;
+elseif strcmp(noise, 'cauchy')
+    fprintf(1, 'add cauchy noise\n')
+    noise_cauchy = true;
+end
 % Apply damping.
 normAi = normAi + damp*max(normAi);
 
@@ -289,18 +297,30 @@ while ~stop
             relaxpar = relaxparinput((k-1)*m+i);
         end
         
+        if noise_gaussian
+            b_ri = normrnd(b(ri), 0.1 * abs(b(ri)));
+        elseif noise_cauchy
+            b_ri = b(ri) + 0.001 * abs(b(ri)) * trnd(1);
+        else
+            b_ri = b(ri);
+        end
+        
         if using_ita
             if robust
-                uk = exp(b(ri) - ai'*xk);
+                uk = exp(b_ri - ai'*xk);
                 % We need to divide by normAi(ri) here, because it is
                 % belong to input set, not the relax parameter!
-                vk = vk + ita(t, theta) * (uk - 1) / (uk + 1) / normAi(ri) * ai;
+                vk_backup = vk;
+                vk = vk + ita(t, theta, speed) * (uk - 1) / (uk + 1) / normAi(ri) * ai;
+                if sum(isnan(vk)) > 0
+                    % do not update if exploded
+                    vk = vk_backup;
+                end
             else
-                vk = vk + ita(t, theta) * (b(ri) - ai'*xk) / normAi(ri) * ai;
+                vk = vk + ita(t, theta, speed) * (b_ri - ai'*xk) / normAi(ri) * ai;
             end
-            
         else
-            vk = vk + (relaxpar*(b(ri) - ai'*xk)/normAi(ri))*ai;
+            vk = vk + (relaxpar*(b_ri - ai'*xk)/normAi(ri))*ai;
         end
         
         if is_sparsekaczmarz
@@ -351,6 +371,10 @@ end
 % Return only the saved iterations: use "l-1" because "l" now points to
 % next candidate.
 X = X(:,1:l-1);
+
+if using_ita
+    fprintf(1,'ita decayed to %f by speed %f in the end\n', ita(t, theta, speed), speed);
+end
 
 % Special for symkaczmarz: double finaliter.
 if ischar(art_method) && strncmpi(art_method,'sym',3)
