@@ -1,6 +1,6 @@
 function [Afun,b,m,n,K,kmax,x0,lbound,ubound,stoprule,taudelta, ...
     relaxparinput,rho,res_dims,rkm1,dk,do_waitbar,verbose,damp,THR,...
-    Kbegin,Nunflag,lambda,ita,theta,robust,noise,speed] = check_inputs(A,b,K,x0,options)
+    Kbegin,Nunflag,lambda,ita,theta,robust,noise,speed,noise_std] = check_inputs(A,b,K,x0,options)
 %CHECK_INPUTS  Check inputs and set default values
 %
 %   [Afun,b,m,n,K,kmax,x0,lbound,ubound,stoprule,taudelta, ...
@@ -287,4 +287,9 @@ end
 speed = 5e-6;
 if isfield(options,'speed')
     speed = options.speed;
+end
+
+noise_std = 0.1;
+if isfield(options,'noise_std')
+    noise_std = options.noise_std;
 end

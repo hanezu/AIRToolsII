@@ -117,7 +117,7 @@ end
 % Parse inputs.
 [Afun,b,m,n,K,kmax,x0,lbound,ubound,stoprule,taudelta, relaxparinput, ...
      ~,res_dims,rkm1,dk,do_waitbar,verbose,...
-     damp,~,~,~,lambda,ita,theta,robust,noise,speed] = check_inputs(varargin{:});
+     damp,~,~,~,lambda,ita,theta,robust,noise,speed,noise_std] = check_inputs(varargin{:});
 
 % Special check for symkaczmarz: number of iterations must be even.
 if ischar(art_method) && strncmpi(art_method,'sym',3)
@@ -298,7 +298,7 @@ while ~stop
         end
         
         if noise_gaussian
-            b_ri = normrnd(b(ri), 0.1 * abs(b(ri)));
+            b_ri = normrnd(b(ri), noise_std * abs(b(ri)));
         elseif noise_cauchy
             b_ri = b(ri) + 0.001 * abs(b(ri)) * trnd(1);
         else
@@ -324,7 +324,8 @@ while ~stop
         end
         
         if is_sparsekaczmarz
-            xk = vk .* (vk > lambda);  % soft threshold operator
+%             xk = vk .* (abs(vk) > lambda);  % soft threshold operator
+            xk = sign(vk) .* max(abs(vk)-lambda,0);
         else
             xk = vk;
         end
